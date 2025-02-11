@@ -259,202 +259,145 @@
     </main>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const storedUserData = JSON.parse(localStorage.getItem("userData"));
+    document.addEventListener("DOMContentLoaded", function () {
+        const storedUserData = JSON.parse(localStorage.getItem("userData"));
+        const isLoggedIn = localStorage.getItem("isLoggedin") === "true";
 
-            if (storedUserData && storedUserData.profilePic) {
-                document.getElementById("dashboardProfilePic").src = storedUserData.profilePic;
-            } else {
-                document.getElementById("dashboardProfilePic").src = "default-profile.png"; // Default image if no picture is found
-            }
-        });
-
-        let totalEarnings = 0; // Total earnings from mining
-        const miningRate = 0.00001; // Rate of mining earnings per interval (in BTC)
-        const updateInterval = 5000; // Update interval in milliseconds (5 seconds)
-        let totalDeposited = 100; // Start with an initial deposit of $100
-        let miningStarted = true; // Set to true to start mining automatically
-
-        // Function to handle user logout
-        function logout() {
-            localStorage.setItem('isLoggedin', 'false'); // Set login state to false
-            window.location.href = 'Signup.html'; // Redirect to login/signup page
+        // Redirect to signup page if not logged in
+        if (!isLoggedIn || !storedUserData) {
+            window.location.href = "Signup.html";
+            return;
         }
 
-        // Function to create and display a notification
-        function showNotification(message) {
-            const notificationContainer = document.getElementById('notificationContainer');
-            const notificationItem = document.createElement('div');
-            notificationItem.className = 'notification-item';
-            notificationItem.textContent = message;
+        // Set profile picture or default image
+        document.getElementById("dashboardProfilePic").src = storedUserData.profilePic || "default-profile.png";
 
-            // Append notification to container
-            notificationContainer.appendChild(notificationItem);
+        // Display user's name
+        document.getElementById("welcomeMessage").textContent = `Hello, ${storedUserData.userName || "User"}! Welcome to your Crypto Dashboard.`;
 
-            // Remove notification after 5 seconds
-            setTimeout(() => {
-                notificationItem.classList.add('hidden');
-                setTimeout(() => notificationContainer.removeChild(notificationItem), 500); // Remove from DOM after fade out
-            }, 5000);
-        }
-
-        let totalProfit = 0; // Start with $0 profit
-        const totalDeposit = 1000; // Initial deposit amount
-
-        function simulateMining() {
-            // Mining rate: $1 every 3 minutes, spread over 36 intervals (5 seconds per interval)
-            const miningRate = 0.02778; // Earn $0.02778 per 5 seconds
-
-            setInterval(() => {
-                totalEarnings += miningRate; // Increase earnings by $0.02778 every interval
-                document.getElementById('estimatedEarnings').textContent = totalEarnings.toFixed(5) + " BTC";
-
-                // Update the Bitcoin balance (for display purposes, in BTC)
-                const currentBalance = parseFloat(document.getElementById('bitcoinBalance').textContent);
-                const newBalance = (currentBalance + totalEarnings).toFixed(5);
-                document.getElementById('bitcoinBalance').innerHTML = `<strong>${newBalance} BTC</strong>`;
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString();
-
-                // Simulate the withdrawal increase, adding $0.02778 every interval
-                const currentTotalWithdrawal = parseFloat(document.getElementById('totalWithdrawal').textContent.replace('$', '').replace(',', '') || 0);
-                const updatedTotalWithdrawal = (currentTotalWithdrawal + miningRate).toFixed(2);
-
-                // Update the displayed withdrawal amount
-                document.getElementById('totalWithdrawal').innerHTML = `<strong>$${updatedTotalWithdrawal}</strong>`;
-                document.getElementById('totalLastUpdated').textContent = new Date().toLocaleDateString();
-
-                // Update the total profit (matches mining progress)
-                totalProfit += miningRate; // Add mining rate to total profit
-                document.getElementById('totalProfit').innerHTML = `<strong>$${totalProfit.toFixed(2)}</strong>`; // Update Total Profit card
-
-                // Calculate the return rate based on profit and deposit
-                const returnRate = ((totalProfit / totalDeposit) * 100).toFixed(2);
-                document.getElementById('returnRate').innerHTML = `Return Rate: ${returnRate}%`; // Update return rate
-
-                // Show notification about earnings
-                showNotification(`You earned $${miningRate.toFixed(2)}! Your withdrawal amount is now $${updatedTotalWithdrawal}.`);
-            }, 5000); // Interval is 5 seconds
-        }
-
-        // Display user's name on login
-        window.onload = function () {
-            const isLoggedIn = localStorage.getItem('isLoggedin');
-            const welcomeMessage = document.getElementById('welcomeMessage');
-
-            if (isLoggedIn !== 'true') {
-                // Redirect to signup page if user is not logged in
-                window.location.href = 'Signup.html';
-            } else {
-                const userName = localStorage.getItem('userName');
-                welcomeMessage.textContent = `Hello, ${userName}! Welcome to your Crypto Dashboard.`;
-
-                // Start mining simulation automatically
-                if (miningStarted) {
-                    simulateMining(); // Start mining simulation
-                }
-            }
-        };
-
-        document.getElementById('logoutButton').addEventListener('click', function () {
-            localStorage.setItem('isLoggedin', 'false'); // Clear login state
-            window.location.href = 'Signup.html'; // Redirect to signup page
-        });
-
+        // Start mining simulation
+        startMiningSimulation();
+        updateUSDate();
 
         // Attach logout event
-        document.getElementById('logoutButton').addEventListener('click', logout);
-    </script>
-    <script>
-        // Chart.js code to generate charts (dummy data)
-        const profitChartCtx = document.getElementById('profitChart').getContext('2d');
-        const profitChart = new Chart(profitChartCtx, {
-            type: 'line',
-            data: {
-                labels: ['0h', '1h', '2h', '3h', '4h', '5h'],
-                datasets: [{
-                    label: 'Profit (BTC)',
-                    data: [0, 0.001, 0.002, 0.003, 0.004, 0.005],
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 2,
-                    fill: false
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Profit (BTC)'
-                        },
-                        beginAtZero: true
-                    }
-                }
+        document.getElementById("logoutButton").addEventListener("click", logout);
+    });
+
+    // Function to handle user logout
+    function logout() {
+        localStorage.clear();  // Clears all stored data
+        window.location.href = "Signup.html";  // Redirect to signup page
+    }
+
+    let totalEarnings = 0;
+    let totalProfit = 0;
+    const miningRate = 0.02778; // $1 per 3 minutes, divided over 5-second intervals
+    const totalDeposit = 1000;
+    const updateInterval = 5000; // 5 seconds
+
+    function startMiningSimulation() {
+        setInterval(() => {
+            totalEarnings += miningRate;
+            totalProfit += miningRate;
+
+            document.getElementById("estimatedEarnings").textContent = `${totalEarnings.toFixed(5)} BTC`;
+            document.getElementById("bitcoinBalance").innerHTML = `<strong>${totalEarnings.toFixed(5)} BTC</strong>`;
+            document.getElementById("lastUpdated").textContent = new Date().toLocaleDateString();
+
+            // Update total withdrawal
+            let updatedTotalWithdrawal = (parseFloat(document.getElementById("totalWithdrawal").textContent.replace("$", "")) || 0) + miningRate;
+            document.getElementById("totalWithdrawal").innerHTML = `<strong>$${updatedTotalWithdrawal.toFixed(2)}</strong>`;
+            document.getElementById("totalLastUpdated").textContent = new Date().toLocaleDateString();
+
+            // Update total profit
+            document.getElementById("totalProfit").innerHTML = `<strong>$${totalProfit.toFixed(2)}</strong>`;
+
+            // Update return rate
+            let returnRate = ((totalProfit / totalDeposit) * 100).toFixed(2);
+            document.getElementById("returnRate").textContent = `Return Rate: ${returnRate}%`;
+
+            // Show notification
+            showNotification(`You earned $${miningRate.toFixed(2)}! Your withdrawal is now $${updatedTotalWithdrawal.toFixed(2)}.`);
+        }, updateInterval);
+    }
+
+    // Function to display notifications
+    function showNotification(message) {
+        const notificationContainer = document.getElementById("notificationContainer");
+        const notificationItem = document.createElement("div");
+        notificationItem.className = "notification-item";
+        notificationItem.textContent = message;
+
+        notificationContainer.appendChild(notificationItem);
+
+        setTimeout(() => {
+            notificationItem.classList.add("hidden");
+            setTimeout(() => notificationContainer.removeChild(notificationItem), 500);
+        }, 5000);
+    }
+
+    // Function to update the US date/time
+    function updateUSDate() {
+        const options = {
+            timeZone: "America/New_York",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        };
+        const usTime = new Intl.DateTimeFormat("en-US", options).format(new Date());
+
+        document.getElementById("usDate").innerText = usTime;
+        document.getElementById("usDateTotal").innerText = usTime;
+    }
+
+    setInterval(updateUSDate, 1000);
+
+    // Chart.js Profit Chart
+    const profitChartCtx = document.getElementById("profitChart").getContext("2d");
+    new Chart(profitChartCtx, {
+        type: "line",
+        data: {
+            labels: ["0h", "1h", "2h", "3h", "4h", "5h"],
+            datasets: [{
+                label: "Profit (BTC)",
+                data: [0, 0.001, 0.002, 0.003, 0.004, 0.005],
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: "Time" } },
+                y: { title: { display: true, text: "Profit (BTC)" }, beginAtZero: true }
             }
-        });
-
-        function updateUSDate() {
-            const options = {
-                timeZone: 'America/New_York', // Change this to your preferred US time zone
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            };
-
-            const usTime = new Intl.DateTimeFormat('en-US', options).format(new Date());
-
-            document.getElementById('usDate').innerText = usTime;
-            document.getElementById('usDateTotal').innerText = usTime;
         }
+    });
 
-        // Update date immediately and refresh every second
-        updateUSDate();
-        setInterval(updateUSDate, 1000);
+    // Chart.js Balance Chart
+    const balanceChartCtx = document.getElementById("balanceChart").getContext("2d");
+    new Chart(balanceChartCtx, {
+        type: "bar",
+        data: {
+            labels: ["Bitcoin", "Ethereum"],
+            datasets: [{
+                label: "Balance",
+                data: [1.5, 10],  // Dummy data
+                backgroundColor: ["rgba(255, 99, 132, 0.2)", "rgba(54, 162, 235, 0.2)"],
+                borderColor: ["rgba(255, 99, 132, 1)", "rgba(54, 162, 235, 1)"],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true } }
+        }
+    });
 
-        const balanceChartCtx = document.getElementById('balanceChart').getContext('2d');
-        const balanceChart = new Chart(balanceChartCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Bitcoin', 'Ethereum'],
-                datasets: [{
-                    label: 'Balance',
-                    data: [1.5, 10], // Dummy data for balances
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+</script>
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const storedUserData = JSON.parse(localStorage.getItem("userData"));
-
-            if (!storedUserData) {
-                window.location.href = "Signup.html"; // Redirect to login page if user is not logged in
-            }
-        });
-    </script>
 
 
 </body>
